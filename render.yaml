@@ -1,0 +1,19 @@
+# Render Blueprint: Render > New > Blueprint > pick this repo.
+# The three secrets below are asked for once, when the Blueprint is created.
+services:
+  - type: web
+    name: raghad-voice-assistant
+    runtime: docker
+    plan: free            # 512 MB. If logs show "Out of memory", switch to 1c-2g in Settings.
+    region: frankfurt     # closest Render region to Jordan
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PIPECAT_ICE_SERVERS
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
