@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مساعدة رغد أورجانكس الصوتية</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ============ Header ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="https://jo.raghadorganics.com/ar/" target="_blank" rel="noopener" aria-label="موقع رغد أورجانكس">
+        <img src="logo.png" alt="Raghad Organics" width="600" height="311" />
+      </a>
+
+      <nav class="nav" aria-label="روابط الصفحة">
+        <a href="#assistant">المساعدة الصوتية</a>
+        <a href="#topics">بشو بتساعدك</a>
+        <a href="https://jo.raghadorganics.com/ar/points-of-sale/" target="_blank" rel="noopener">نقاط البيع</a>
+        <a href="https://jo.raghadorganics.com/ar/shop/" target="_blank" rel="noopener">المتجر</a>
+      </nav>
+
+      <div class="topbar-end">
+        <a class="phone" href="tel:062222700" dir="ltr">06 222 2700</a>
+        <div class="status" id="status" data-state="idle" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">غير متصل</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ Hero ============ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-media" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <h1 id="hero-title">مساعدة رغد أورجانكس الصوتية<span>صوتك بيوصّلِك للي بدك تعرفيه.</span></h1>
+        <p>
+          اسألي عن منتجات الشعر والبشرة والجسم، الأسعار، التوصيل،
+          أو احجزي جلسة أمينوثيرابي. بتسمعك وبترد عليكِ بالصوت فوراً.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="hero-call" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12z"/></svg>
+            <span id="hero-call-label">احكي مع المساعدة الآن</span>
+          </button>
+          <a class="btn btn-ghost" href="tel:062222700">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.2 15.2 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+            اتصلي بخدمة العملاء
+          </a>
+        </div>
+      </div>
+      <figure class="signature">
+        <img src="img/signature.png" alt="توقيع رغد المحارب" width="700" height="481" />
+        <figcaption>د. رغد المحارب، مؤسِّسة رغد أورجانكس</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ Assistant ============ -->
+  <main class="assistant" id="assistant">
+    <div class="assistant-card">
+      <section class="voice" aria-labelledby="voice-title">
+        <header class="card-head">
+          <h2 id="voice-title">المساعدة الصوتية</h2>
+          <p>احكي باللهجة اللي بتريحك، وهي بتسمعك وبترد عليكِ بالصوت.</p>
+        </header>
+
+        <div class="drop-wrap" id="drop-wrap">
+          <canvas id="drop" aria-hidden="true"></canvas>
+        </div>
+
+        <p class="voice-state" id="voice-state">اضغطي "ابدأ المكالمة" وابدئي الحكي</p>
+        <p class="timer" id="timer" aria-label="مدة المكالمة" hidden>00:00</p>
+
+        <div class="controls">
+          <button class="call" id="call" type="button" aria-pressed="false">
+            <span class="call-ring" aria-hidden="true"></span>
+            <svg class="call-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.2 15.2 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+            <span id="call-label">ابدأ المكالمة</span>
+          </button>
+
+          <button class="switch" id="mic" type="button" role="switch" aria-checked="true" disabled>
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            <span id="mic-label">المايك شغّال</span>
+          </button>
+        </div>
+
+        <p class="error" id="error" role="alert" hidden></p>
+      </section>
+
+      <section class="conversation" aria-labelledby="conv-title">
+        <header class="card-head conv-head">
+          <div>
+            <h2 id="conv-title">نص المحادثة</h2>
+            <p>كل اللي بتحكيه وردود المساعدة بيظهروا هون مباشرة.</p>
+          </div>
+          <button class="text-btn" id="clear" type="button">مسح</button>
+        </header>
+        <ol class="transcript" id="transcript" aria-live="polite">
+          <li class="empty" id="empty">
+            <img src="img/signature.png" alt="" aria-hidden="true" />
+            <span>لما تبدأ المكالمة، رح تظهر المحادثة هون.</span>
+          </li>
+        </ol>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ Topics ============ -->
+  <section class="topics" id="topics" aria-labelledby="topics-title">
+    <h2 id="topics-title">بشو بتقدر تساعدك المساعدة؟</h2>
+    <p class="topics-sub">اختاري موضوع وابدئي المكالمة، أو احكي عن أي شي ببالك.</p>
+    <ul class="topic-grid">
+      <li>
+        <button class="topic" type="button" data-topic>
+          <img src="img/hair.jpg" alt="" loading="lazy" />
+          <span class="topic-body">
+            <strong>العناية بالشعر</strong>
+            <span>اقتراحات حسب نوع شعرك: جاف، تالف، قشرة أو تساقط.</span>
+            <em>جرّبي: شو بتنصحوني لشعري الجاف؟</em>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="topic" type="button" data-topic>
+          <img src="img/skin.jpg" alt="" loading="lazy" />
+          <span class="topic-body">
+            <strong>العناية بالبشرة</strong>
+            <span>تفتيح البشرة، حب الشباب، والبشرة الجافة.</span>
+            <em>جرّبي: عندي حب شباب، شو بستعمل؟</em>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="topic" type="button" data-topic>
+          <img src="img/amino.jpg" alt="" loading="lazy" />
+          <span class="topic-body">
+            <strong>جلسات الأمينوثيرابي</strong>
+            <span>السعر، مدة الجلسة، الفروع، وحجز موعد.</span>
+            <em>جرّبي: قديش سعر جلسة الأمينوثيرابي؟</em>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="topic" type="button" data-topic>
+          <img src="img/products.jpg" alt="" loading="lazy" />
+          <span class="topic-body">
+            <strong>الطلبات والتوصيل</strong>
+            <span>مدة التوصيل، طرق الدفع، والاستبدال والاسترجاع.</span>
+            <em>جرّبي: كيف بقدر أرجّع منتج؟</em>
+          </span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ Footer ============ -->
+  <footer class="foot">
+    <div class="foot-inner">
+      <img class="foot-logo" src="logo.png" alt="Raghad Organics" width="600" height="311" />
+      <div class="foot-col">
+        <strong>خدمة العملاء</strong>
+        <a href="tel:062222700" dir="ltr">06 222 2700</a>
+        <span>السبت إلى الخميس، 9 الصبح لـ 5 المسا</span>
+      </div>
+      <div class="foot-col">
+        <strong>العنوان</strong>
+        <span>شارع الأميرة زينب، خلدا، عمّان</span>
+        <a href="https://jo.raghadorganics.com/ar/points-of-sale/" target="_blank" rel="noopener">كل نقاط البيع</a>
+      </div>
+      <div class="foot-col">
+        <strong>تابعونا</strong>
+        <a href="https://www.instagram.com/raghad.organics" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.facebook.com/raghad.organics" target="_blank" rel="noopener">Facebook</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>هاي نسخة تجريبية من المساعدة الصوتية لرغد أورجانكس.</span>
+      <a href="/client/">الواجهة الأصلية</a>
+    </div>
+  </footer>
+
+  <audio id="bot-audio" autoplay playsinline></audio>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Same Pipecat version that runs on the local PC (commit 6a68835 of pipecat-ai/pipecat).
+# Extras: OpenAI services, browser WebRTC transport, the web runner, websocket support.
+pipecat-ai[openai,webrtc,runner,websocket] @ git+https://github.com/pipecat-ai/pipecat.git@6a68835719293e82a32e816e8aad95c15b114956
