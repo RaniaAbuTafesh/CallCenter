@@ -73,7 +73,12 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     # 2. LLM: thinks up the reply
     llm = OpenAILLMService(
         api_key=api_key,
-        settings=OpenAILLMService.Settings(system_instruction=SYSTEM_PROMPT),
+        settings=OpenAILLMService.Settings(
+            # A smaller model answers noticeably faster in a voice call.
+            # Override with the LLM_MODEL variable (e.g. gpt-4.1) if you prefer.
+            model=os.getenv("LLM_MODEL", "gpt-4.1-mini"),
+            system_instruction=SYSTEM_PROMPT,
+        ),
     )
 
     # 3. Text-to-speech: speaks the reply
