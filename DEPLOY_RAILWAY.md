@@ -26,7 +26,7 @@ Railway بيستقبل بس اتصالات ويب (HTTP/TCP) وما بيدعم U
 1. انسخ ملف `.env` من `Desktop\pipecat\pipecat\` لجوّا مجلد `railway-deploy`. ما رح ينرفع على GitHub، لأن `.gitignore` بيمنعه.
 2. افتح PowerShell بمجلد `railway-deploy` وشغّل:
    ```powershell
-   $env:DEMO_PASSWORD = "test123"
+   $env:SITE_PASSWORD = "test123"
    ..\pipecat\.venv\Scripts\python.exe demo_bot.py -t webrtc
    ```
 3. افتح `http://localhost:7860/`. لازم يطلب منك اسم مستخدم وكلمة سر: اكتب `raghad` و `test123`.
@@ -63,7 +63,7 @@ Railway بيستقبل بس اتصالات ويب (HTTP/TCP) وما بيدعم U
 |---|---|
 | `OPENAI_API_KEY` | مفتاح OpenAI تبعك |
 | `PIPECAT_ICE_SERVERS` | السطر اللي جهّزته بالخطوة 2 (من بعد `=`) |
-| `DEMO_PASSWORD` | كلمة سر للصفحة، **بأحرف إنجليزية وأرقام بس** |
+| `SITE_PASSWORD` (اختياري) | كلمة سر للصفحة، **بأحرف إنجليزية وأرقام بس**. بدونها الصفحة مفتوحة لأي حدا معه الرابط. |
 
 بعد ما تحفظها، Railway رح يعيد التشغيل لحاله.
 
@@ -95,7 +95,7 @@ Railway بيستقبل بس اتصالات ويب (HTTP/TCP) وما بيدعم U
 
 * **Railway:** في فترة تجربة، وبعدها بتحتاج خطة مدفوعة (Hobby). شوف الأسعار الحالية على موقعهم.
 * **OpenAI:** كل مكالمة بتكلّف حسب الاستخدام. حط حد للصرف من **OpenAI → Settings → Limits**.
-* **كلمة السر:** إذا ما حطيت `DEMO_PASSWORD`، أي حدا معه الرابط بيقدر يحكي مع البوت على حسابك.
+* **كلمة السر:** إذا ما حطيت `SITE_PASSWORD`، أي حدا معه الرابط بيقدر يحكي مع البوت على حسابك.
 * **ما تنشر المفاتيح:** مفتاح OpenAI وبيانات TURN بس على Railway، مش على GitHub ولا بالشات.
 
 ## تحديث البوت بعدين

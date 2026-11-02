@@ -174,8 +174,9 @@ def add_deploy_routes():
     - /healthz: lets Railway check the service is up.
     - /raghad-config: hands the TURN/STUN servers (PIPECAT_ICE_SERVERS) to the
       browser page, so both sides of the call use the same relay.
-    - DEMO_PASSWORD: if set, the whole site asks for a username/password
-      (username "raghad", or DEMO_USER) so strangers can't spend your OpenAI credit.
+    - SITE_PASSWORD (optional, off by default): if set, the whole site asks for a
+      username/password (username "raghad", or SITE_USER). Leave it unset to let
+      anyone with the link try the demo.
     """
     import base64
     import secrets
@@ -202,12 +203,12 @@ def add_deploy_routes():
                 logger.error(f"Could not read PIPECAT_ICE_SERVERS: {e}")
         return JSONResponse({"iceServers": ice_servers}, headers={"Cache-Control": "no-store"})
 
-    password = os.getenv("DEMO_PASSWORD", "").strip()
+    password = os.getenv("SITE_PASSWORD", "").strip()
     if not password:
-        logger.warning("DEMO_PASSWORD is not set: anyone with the link can use this bot.")
+        logger.info("Public mode: no SITE_PASSWORD set, anyone with the link can use this bot.")
         return
 
-    username = os.getenv("DEMO_USER", "raghad").strip() or "raghad"
+    username = os.getenv("SITE_USER", "raghad").strip() or "raghad"
     expected = "Basic " + base64.b64encode(f"{username}:{password}".encode()).decode()
     open_paths = {"/healthz"}
 

@@ -4,27 +4,26 @@
 
 ## قبل ما تبدأ
 
-جهّز هدول الثلاثة (التفاصيل بملف `DEPLOY_RAILWAY.md`، الخطوة 2):
+جهّز هدول (التفاصيل بملف `DEPLOY_RAILWAY.md`، الخطوة 2):
 1. مفتاح OpenAI.
 2. سطر TURN من حساب Metered (`PIPECAT_ICE_SERVERS`). Render كمان ما بيدعم UDP، فهاد ضروري.
-3. كلمة سر للصفحة، **أحرف إنجليزية وأرقام بس**.
+3. (اختياري) كلمة سر للصفحة: ضيف `SITE_PASSWORD` من **Environment** بعد الرفع. بدونها أي حدا معه الرابط بيقدر يجرّب.
 
 ## الخطوات
 
 1. سجّل على https://render.com بحساب GitHub.
 2. اكبس **New +** واختار **Blueprint**.
 3. اربط GitHub إذا طلب، واختار repo **CallCenter**.
-4. Render رح يقرأ `render.yaml` ويطلب منك القيم الثلاثة:
+4. Render رح يقرأ `render.yaml` ويطلب منك القيمتين:
    * `OPENAI_API_KEY`: مفتاح OpenAI
    * `PIPECAT_ICE_SERVERS`: سطر TURN
-   * `DEMO_PASSWORD`: كلمة سر الصفحة
 5. اكبس **Apply** أو **Deploy Blueprint**. أول بناء بياخد 5 لـ 10 دقايق.
 6. افتح الخدمة **raghad-voice-assistant**. الرابط مكتوب فوق، زي `https://raghad-voice-assistant.onrender.com`.
-7. افتح الرابط، واكتب اسم المستخدم `raghad` وكلمة السر، واعمل مكالمة.
+7. افتح الرابط واعمل مكالمة. (إذا حطيت `SITE_PASSWORD`، اسم المستخدم `raghad`.)
 
 ## بالـ Logs لازم تشوف
 
-* `Password protection is on (username: raghad).`
+* `Public mode: no SITE_PASSWORD set` (أو `Password protection is on` إذا حطيت كلمة سر)
 * `Uvicorn running on http://0.0.0.0:...`
 
 ## ملاحظات الخطة المجانية
