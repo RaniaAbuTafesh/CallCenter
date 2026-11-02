@@ -9,6 +9,7 @@
 
 import os
 
+import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -23,6 +24,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.services.openai.stt import OpenAIRealtimeSTTService
 from pipecat.services.openai.tts import OpenAITTSService
@@ -42,6 +44,12 @@ transport_params = {
     ),
 }
 
+# n8n workflow that stores questions the bot could not answer (data table
+# raghad_unanswered_questions). Override with N8N_WEBHOOK_URL if it moves.
+N8N_WEBHOOK_URL = os.getenv(
+    "N8N_WEBHOOK_URL", "https://n8n.zyndeskjo.com/webhook/raghad-unanswered-question"
+).strip()
+
 # Call-center knowledge base (Raghad Organics). Lives next to this script.
 KNOWLEDGE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "raghad_organics_knowledge.txt")
 try:
@@ -57,8 +65,12 @@ SYSTEM_PROMPT = (
     "Speak in friendly Jordanian Arabic by default; switch to English only if the caller speaks English. "
     "Your replies are spoken aloud, so never use emojis, bullet points, lists or other formatting, "
     "and keep each answer to one to three short sentences. Say prices in words like 'تسعة دنانير'. "
-    "Answer ONLY from the knowledge base below. If the answer is not there, say you are not sure "
-    "and give the customer service number 06 222 2700. Never invent prices, policies or medical advice.\n\n"
+    "Answer ONLY from the knowledge base below. Never invent prices, policies or medical advice.\n"
+    "If the caller asks a real question about Raghad Organics (products, prices, orders, delivery, branches, "
+    "services, the company) and the answer is NOT in the knowledge base, first call the function "
+    "log_unanswered_question once for that question, then tell the caller briefly that you don't have this "
+    "information right now, that you noted the question for the team, and that they can call 06 222 2700. "
+    "Do not call it for greetings, small talk, or questions you can answer from the knowledge base.\n\n"
     "=== KNOWLEDGE BASE ===\n" + KNOWLEDGE
 )
 
@@ -87,7 +99,39 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         settings=OpenAITTSService.Settings(voice="ballad"),
     )
 
-    context = LLMContext()
+    session_id = str(getattr(runner_args, "session_id", "") or "")
+
+    async def log_unanswered_question(
+        params: FunctionCallParams, question: str, topic: str = "other", customer_words: str = ""
+    ):
+        """Record a customer question that the knowledge base cannot answer, so the team can add the answer later.
+
+        Args:
+            question: The customer's question rewritten as one clear, complete sentence in Arabic.
+            topic: One of: products, prices, delivery, payment, returns, branches, aminotherapy, company, other.
+            customer_words: What the customer actually said, as close to their words as possible.
+        """
+        payload = {
+            "question": question,
+            "topic": topic,
+            "customer_words": customer_words,
+            "session_id": session_id,
+            "source": "voice-bot",
+        }
+        saved = False
+        if N8N_WEBHOOK_URL:
+            try:
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as http:
+                    async with http.post(N8N_WEBHOOK_URL, json=payload) as resp:
+                        saved = resp.status == 200
+                        if not saved:
+                            logger.warning(f"n8n logging failed: HTTP {resp.status} {await resp.text()}")
+            except Exception as e:
+                logger.warning(f"n8n logging failed: {e}")
+        logger.info(f"Unanswered question logged={saved}: {question}")
+        await params.result_callback({"recorded": saved})
+
+    context = LLMContext(tools=[log_unanswered_question])
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
