@@ -13,7 +13,6 @@ import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
 
-from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker, ProcessorUnusablePolicy
@@ -25,16 +24,24 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.llm_service import FunctionCallParams
-from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.services.openai.stt import OpenAIRealtimeSTTService
-from pipecat.services.openai.tts import OpenAITTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.workers.runner import WorkerRunner
 
 load_dotenv(override=True)
 
-if not os.getenv("OPENAI_API_KEY"):
-    raise SystemExit("OPENAI_API_KEY is missing. Put it in the .env file next to this script.")
+# Which AI runs the call. With a Gemini key the bot uses Gemini Live (one model
+# that listens, thinks and speaks); otherwise it uses OpenAI (STT + LLM + TTS).
+# Force one with AI_PROVIDER=gemini or AI_PROVIDER=openai.
+GOOGLE_API_KEY = (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip()
+AI_PROVIDER = (os.getenv("AI_PROVIDER") or "").strip().lower() or ("gemini" if GOOGLE_API_KEY else "openai")
+if AI_PROVIDER not in ("gemini", "openai"):
+    raise SystemExit(f"AI_PROVIDER must be 'gemini' or 'openai', not '{AI_PROVIDER}'.")
+if AI_PROVIDER == "gemini" and not GOOGLE_API_KEY:
+    raise SystemExit("GOOGLE_API_KEY is missing. Put your Gemini key in the .env file (or in Render > Environment).")
+if AI_PROVIDER == "openai" and not OPENAI_API_KEY:
+    raise SystemExit("No AI key found. Add GOOGLE_API_KEY (Gemini) or OPENAI_API_KEY to the .env file.")
+logger.info(f"AI provider: {AI_PROVIDER}")
 
 # Only the browser (WebRTC) transport, so no extra accounts are needed.
 transport_params = {
@@ -76,29 +83,7 @@ SYSTEM_PROMPT = (
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
-    logger.info("Starting demo bot")
-    api_key = os.environ["OPENAI_API_KEY"]
-
-    # 1. Speech-to-text: understands what you say
-    stt = OpenAIRealtimeSTTService(api_key=api_key)
-
-    # 2. LLM: thinks up the reply
-    llm = OpenAILLMService(
-        api_key=api_key,
-        settings=OpenAILLMService.Settings(
-            # A smaller model answers noticeably faster in a voice call.
-            # Override with the LLM_MODEL variable (e.g. gpt-4.1) if you prefer.
-            model=os.getenv("LLM_MODEL", "gpt-4.1-mini"),
-            system_instruction=SYSTEM_PROMPT,
-        ),
-    )
-
-    # 3. Text-to-speech: speaks the reply
-    tts = OpenAITTSService(
-        api_key=api_key,
-        settings=OpenAITTSService.Settings(voice="ballad"),
-    )
-
+    logger.info(f"Starting demo bot ({AI_PROVIDER})")
     session_id = str(getattr(runner_args, "session_id", "") or "")
 
     async def log_unanswered_question(
@@ -131,31 +116,84 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         logger.info(f"Unanswered question logged={saved}: {question}")
         await params.result_callback({"recorded": saved})
 
-    context = LLMContext(tools=[log_unanswered_question])
-    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
-        context,
-        user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
-    )
+    if AI_PROVIDER == "gemini":
+        from pipecat.services.google.gemini_live.llm import GeminiLiveLLMService
+        from pipecat.transcriptions.language import Language
 
-    pipeline = Pipeline(
-        [
-            transport.input(),  # your microphone audio
-            stt,  # speech -> text
-            user_aggregator,  # collect what you said
-            llm,  # text -> reply
-            tts,  # reply -> speech
-            transport.output(),  # bot audio back to the browser
-            assistant_aggregator,  # remember what the bot said
-        ]
-    )
+        # Gemini Live hears, thinks and speaks in one model, with its own
+        # server-side turn detection, so no separate STT/TTS/VAD is needed.
+        gemini_settings = {
+            "system_instruction": SYSTEM_PROMPT,
+            "voice": os.getenv("GEMINI_VOICE", "Aoede"),
+            "language": Language.AR,
+        }
+        if os.getenv("GEMINI_MODEL"):
+            gemini_settings["model"] = os.environ["GEMINI_MODEL"]
+        llm = GeminiLiveLLMService(
+            api_key=GOOGLE_API_KEY,
+            settings=GeminiLiveLLMService.Settings(**gemini_settings),
+            tools=[log_unanswered_question],
+        )
 
-    worker = PipelineWorker(
-        pipeline,
-        params=PipelineParams(
+        context = LLMContext()
+        user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
+        pipeline = Pipeline(
+            [
+                transport.input(),  # your microphone audio
+                user_aggregator,  # collect what you said
+                llm,  # Gemini Live: listens, thinks and speaks
+                transport.output(),  # bot audio back to the browser
+                assistant_aggregator,  # remember what the bot said
+            ]
+        )
+        pipeline_params = PipelineParams(enable_metrics=True, enable_usage_metrics=True)
+    else:
+        from pipecat.audio.vad.silero import SileroVADAnalyzer
+        from pipecat.services.openai.llm import OpenAILLMService
+        from pipecat.services.openai.stt import OpenAIRealtimeSTTService
+        from pipecat.services.openai.tts import OpenAITTSService
+
+        # 1. Speech-to-text: understands what you say
+        stt = OpenAIRealtimeSTTService(api_key=OPENAI_API_KEY)
+        # 2. LLM: thinks up the reply (smaller model = faster replies; override with LLM_MODEL)
+        llm = OpenAILLMService(
+            api_key=OPENAI_API_KEY,
+            settings=OpenAILLMService.Settings(
+                model=os.getenv("LLM_MODEL", "gpt-4.1-mini"),
+                system_instruction=SYSTEM_PROMPT,
+            ),
+        )
+        # 3. Text-to-speech: speaks the reply
+        tts = OpenAITTSService(
+            api_key=OPENAI_API_KEY,
+            settings=OpenAITTSService.Settings(voice="ballad"),
+        )
+
+        context = LLMContext(tools=[log_unanswered_question])
+        user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
+            context,
+            user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
+        )
+        pipeline = Pipeline(
+            [
+                transport.input(),  # your microphone audio
+                stt,  # speech -> text
+                user_aggregator,  # collect what you said
+                llm,  # text -> reply
+                tts,  # reply -> speech
+                transport.output(),  # bot audio back to the browser
+                assistant_aggregator,  # remember what the bot said
+            ]
+        )
+        pipeline_params = PipelineParams(
             audio_out_sample_rate=24000,
             enable_metrics=True,
             enable_usage_metrics=True,
-        ),
+        )
+
+    worker = PipelineWorker(
+        pipeline,
+        params=pipeline_params,
         idle_timeout_secs=runner_args.pipeline_idle_timeout_secs,
         processor_unusable_policy=ProcessorUnusablePolicy.END,
     )

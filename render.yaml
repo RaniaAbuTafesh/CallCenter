@@ -11,6 +11,8 @@ services:
     healthCheckPath: /healthz
     autoDeployTrigger: commit
     envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: PIPECAT_ICE_SERVERS
